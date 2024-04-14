@@ -18,8 +18,48 @@
     <div id="uploadStatus"></div>
 
     <script>
-        // here we put JavaScript
-    </script>
+        // add event listener
+        document.getElementById('uploadButton').addEventListener('click', function() {
+            //  retrieve the uploaded file
+            var fileInput = document.getElementById('fileUpload');
+            var file = fileInput.files[0];
+            var fileName = file.name;
+        
+            // request a pre-signed URL from backend, then handle the response and extract url
+            fetch('/generate-presigned-url?filename=' + encodeURIComponent(fileName))
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                var presignedUrl = data.url;
+                var uploadHeaders = data.headers;
+        
+                // use the pre-signed URL to upload the file
+                var formData = new FormData();
+                formData.append("file", file);
+        
+                return fetch(presignedUrl, {
+                    method: 'PUT',
+                    headers: uploadHeaders,
+                    body: file
+                });
+            })
+            // check the upload response
+            .then(function(uploadResponse) {
+                if (uploadResponse.ok) {
+                    console.log('Upload successful!');
+                    document.getElementById('uploadStatus').innerHTML = 'Upload successful!';
+                } else {
+                    throw new Error('Upload failed!');
+                }
+            })
+            // catch and display errors
+            .catch(function(error) {
+                console.error('Error:', error);
+                document.getElementById('uploadStatus').innerHTML = 'Error: ' + error.message;
+            });
+        });
+        </script>        
 
 </body>
 </html>
