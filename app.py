@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from functools import wraps
 import boto3
 import logging
 from botocore.exceptions import NoCredentialsError, ClientError
@@ -17,6 +18,20 @@ logging.basicConfig(level=logging.INFO)
 users = {
     "username1": generate_password_hash("password1")
 }
+
+# Function to check for valid JWT in the request
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 403
+        try:
+            jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        except:
+            return jsonify({'message': 'Token is invalid!'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 # define route for GET requests, initialize boto3 S3 client, 
 # retrieve filename from client-side JavaScript
