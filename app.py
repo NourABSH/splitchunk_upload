@@ -2,12 +2,21 @@ from flask import Flask, request, jsonify
 import boto3
 import logging
 from botocore.exceptions import NoCredentialsError, ClientError
+import jwt
+import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Create an instance of the Flask class
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key_here'
 
 # basic logging
 logging.basicConfig(level=logging.INFO)
+
+# dummy database of users
+users = {
+    "username1": generate_password_hash("password1")
+}
 
 # define route for GET requests, initialize boto3 S3 client, 
 # retrieve filename from client-side JavaScript
@@ -34,6 +43,24 @@ def generate_presigned_url():
     
 # return URL to client as json
     return jsonify({'url': response})
+
+# user login route to issue JWT
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    user = users.get(username)
+
+    if user and check_password_hash(user, password):
+        token = jwt.encode({
+            'sub': username,
+            'iat': datetime.datetime.utcnow(),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Token expires in 30 minutes
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+
+        return jsonify({'token': token})
+    else:
+        return jsonify({'message': 'Invalid credentials'}), 401
 
 # server start
 if __name__ == '__main__':
