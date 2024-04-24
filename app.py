@@ -6,18 +6,27 @@ from botocore.exceptions import NoCredentialsError, ClientError
 import jwt
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import mysql.connector
+from mysql.connector import Error
 
 # Create an instance of the Flask class
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 
+# connect to database
+try:
+    connection = mysql.connector.connect(
+        host='localhost',
+        database='splitchunk_upload',
+        user='your_username',
+        password='your_password'
+    )
+except Error as e:
+    print("Error while connecting to MySQL", e)
+
+
 # basic logging
 logging.basicConfig(level=logging.INFO)
-
-# dummy database of users
-users = {
-    "username1": generate_password_hash("password1")
-}
 
 # Function to check for valid JWT in the request
 def token_required(f):
@@ -64,9 +73,12 @@ def generate_presigned_url():
 def login():
     username = request.json.get('username')
     password = request.json.get('password')
-    user = users.get(username)
+    cursor = connection.cursor()
+    cursor.execute("SELECT password_hash FROM users WHERE username = %s", (username,))
+    user_record = cursor.fetchone()
+    cursor.close()
 
-    if user and check_password_hash(user, password):
+    if user_record and check_password_hash(user_record[0], password):
         token = jwt.encode({
             'sub': username,
             'iat': datetime.datetime.utcnow(),
