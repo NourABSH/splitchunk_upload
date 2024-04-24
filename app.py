@@ -1,28 +1,31 @@
 from flask import Flask, request, jsonify
+import os
 from functools import wraps
 import boto3
 import logging
 from botocore.exceptions import NoCredentialsError, ClientError
 import jwt
 import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 from mysql.connector import Error
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 # Create an instance of the Flask class
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 
-# connect to database
+# Establishing a database connection using environment variables
 try:
     connection = mysql.connector.connect(
-        host='localhost',
-        database='splitchunk_upload',
-        user='your_username',
-        password='your_password'
+        host=os.getenv('SPLITCHUNK_UPLOAD_DB_HOST', 'localhost'),
+        database=os.getenv('SPLITCHUNK_UPLOAD_DB_NAME', 'splitchunk_upload'),
+        user=os.getenv('SPLITCHUNK_UPLOAD_DB_USERNAME', 'your_default_username'),
+        password=os.getenv('SPLITCHUNK_UPLOAD_DB_PASSWORD', 'your_default_password')
     )
+    print("Connected to MySQL successfully")
 except Error as e:
-    print("Error while connecting to MySQL", e)
+    print("Error while connecting to MySQL:", e)
 
 
 # basic logging
