@@ -12,6 +12,8 @@
         <input type="text" id="username" placeholder="Username" required>
         <input type="password" id="password" placeholder="Password" required>
         <button type="submit">Login</button>
+        <!-- link to the registration page -->
+        <a href="register.html" style="margin-left: 10px;"><button type="button">Register</button></a>
     </form>
 
     <h2>File Upload</h2>
@@ -52,7 +54,7 @@
 
         // handle file upload with event listener
         document.getElementById('uploadButton').addEventListener('click', function() {
-            //  retrieve the uploaded file
+            // retrieve the uploaded file
             var fileInput = document.getElementById('fileUpload');
             var file = fileInput.files[0];
             var fileName = file.name;
@@ -85,7 +87,6 @@
                     body: file
                 });
             })
-            // check the upload response
             .then(function(uploadResponse) {
                 if (uploadResponse.ok) {
                     console.log('Upload successful!');
@@ -94,13 +95,12 @@
                     throw new Error('Upload failed!');
                 }
             })
-            // catch and display errors
             .catch(function(error) {
                 console.error('Error:', error);
                 document.getElementById('uploadStatus').innerHTML = 'Error: ' + error.message;
             });
         });
-        </script>        
+    </script>        
 
 </body>
 </html>

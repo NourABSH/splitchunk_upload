@@ -31,6 +31,36 @@ except Error as e:
 # basic logging
 logging.basicConfig(level=logging.INFO)
 
+# Route for user registration
+@app.route('/register', methods=['POST'])
+def register():
+    # Parse username and password from the incoming request
+    username = request.json.get('username')
+    password = request.json.get('password')
+
+    # Generate a password hash to securely store the password
+    hashed_password = generate_password_hash(password)
+
+    # Initialize cursor to execute database queries
+    cursor = connection.cursor()
+    try:
+        # Insert the new user into the database
+        cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, hashed_password))
+        connection.commit()  # Commit the transaction to make sure data is saved in the database
+        return jsonify({"message": "User registered successfully!"}), 201
+    except mysql.connector.IntegrityError:
+        # catch exceptions related to duplicate usernames or other integrity issues
+        return jsonify({"error": "This username is already taken"}), 409
+    except Error as e:
+        # error handling for any other database errors
+        print("Database error:", e)
+        return jsonify({"error": "Failed to register user due to database error"}), 500
+    finally:
+        # Close the cursor to free database resources
+        cursor.close()
+
+
+
 # Function to check for valid JWT in the request
 def token_required(f):
     @wraps(f)
