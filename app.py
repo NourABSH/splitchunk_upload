@@ -7,12 +7,14 @@ from botocore.exceptions import NoCredentialsError, ClientError
 import jwt
 import datetime
 import mysql.connector
+from flask_cors import CORS
 from mysql.connector import Error
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # Create an instance of the Flask class
 app = Flask(__name__)
+CORS(app) # enables CORS for all routes and methods
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 
 # Establishing a database connection using environment variables
@@ -49,12 +51,15 @@ def register():
         connection.commit()  # Commit the transaction to make sure data is saved in the database
         return jsonify({"message": "User registered successfully!"}), 201
     except mysql.connector.IntegrityError:
-        # catch exceptions related to duplicate usernames or other integrity issues
-        return jsonify({"error": "This username is already taken"}), 409
+        response = jsonify({"error": "This username is already taken"})
+        print("Response being sent:", response.get_data(as_text=True))  # Log to ensure the response structure
+        return response, 409
     except Error as e:
-        # error handling for any other database errors
         print("Database error:", e)
         return jsonify({"error": "Failed to register user due to database error"}), 500
+    except Exception as e:
+        print("General error:", e)
+        return jsonify({"error": "An unexpected error occurred"}), 500
     finally:
         # Close the cursor to free database resources
         cursor.close()

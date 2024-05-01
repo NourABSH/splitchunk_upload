@@ -25,18 +25,35 @@
             event.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
-            fetch('/register', {
+
+            fetch('http://localhost:5000/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ username: username, password: password })
             })
-            .then(response => response.json())
-            .then(data => alert(data.message))
-            .catch(error => console.error('Error:', error));
+            .then(response => {
+                if (!response.ok && response.status !== 409) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.message) {
+                    alert(data.message); // Displays success message.
+                } else if (data.error) {
+                    alert(data.error); // Displays error message.
+                } else {
+                    alert("Unknown response from server."); // Fallback for unexpected JSON structure.
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to register due to a network or parsing error.');
+            });
         });
+
     </script>
 </body>
 </html>
