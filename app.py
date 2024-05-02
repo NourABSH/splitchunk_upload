@@ -125,7 +125,9 @@ def login():
 
         return jsonify({'token': token})
     else:
-        return jsonify({'message': 'Invalid credentials'}), 401
+        response = jsonify({'message': 'Invalid credentials'})
+        print("Login failed for user:", username)  # Log for debugging
+        return response, 401
 
 # server start
 if __name__ == '__main__':
