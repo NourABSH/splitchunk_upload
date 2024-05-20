@@ -18,6 +18,7 @@
             <input type="password" id="password" name="password" required>
         </div>
         <button type="submit">Register</button>
+        <button type="button" id="loginButton">Take Me to Login Page</button>
     </form>
 
     <script>
@@ -54,6 +55,9 @@
             });
         });
 
+        document.getElementById('loginButton').addEventListener('click', function() {
+            window.location.href = 'index.html';  // Redirect to login page
+        });
     </script>
 </body>
 </html>

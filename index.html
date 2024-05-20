@@ -15,17 +15,7 @@
         <!-- link to the registration page -->
         <a href="register.html" style="margin-left: 10px;"><button type="button">Register</button></a>
     </form>
-
-    <h2>File Upload</h2>
-    <form id="uploadForm">
-        <div>
-            <label for="fileUpload">Select file to upload (max 1GB):</label>
-            <input type="file" id="fileUpload" name="fileUpload">
-        </div>
-        <button type="button" id="uploadButton">Upload File</button>
-    </form>
-    <div id="uploadStatus"></div>
-
+    
     <script>
         // handle login with event listener
         document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -52,8 +42,9 @@
                 if (data.token) {
                     localStorage.setItem('token', data.token);  // Store token
                     alert('Login successful!');
+                    window.location.href = 'upload.html'; // Redirect to upload page
                 } else {
-                    alert('Unexpected response from server.'); // If there's no token and no error was thrown
+                    alert('Login failed!'); // If there's no token and no error was thrown
                 }
             })
             .catch(error => {

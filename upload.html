@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h2>File Upload</h2>
+    <form id="uploadForm">
+        <div>
+            <label for="fileUpload">Select file to upload (max 1GB):</label>
+            <input type="file" id="fileUpload" name="fileUpload">
+        </div>
+        <button type="button" id="uploadButton">Upload File</button>
+    </form>
+    <div id="uploadStatus"></div>
+
+    <script>
+        // handle file upload with event listener
+        document.getElementById('uploadButton').addEventListener('click', function() {
+            // retrieve the uploaded file
+            var fileInput = document.getElementById('fileUpload');
+            var file = fileInput.files[0];
+            var fileName = file.name;
+
+            // retrieve token from localStorage
+            const token = localStorage.getItem('token');
+            if (!token) {
+                document.getElementById('uploadStatus').innerHTML = 'Please login to upload files.';
+                return;
+            }
+
+            // request a pre-signed URL from backend, then handle the response and extract url
+            fetch('/generate-presigned-url?filename=' + encodeURIComponent(fileName), {
+                headers: {
+                    'Authorization': token
+                }
+            })
+            .then(response => response.json())
+            .then(function(data) {
+                var presignedUrl = data.url;
+
+                // use the pre-signed URL to upload the file
+                return fetch(presignedUrl, {
+                    method: 'PUT',
+                    body: file
+                });
+            })
+            .then(function(uploadResponse) {
+                if (uploadResponse.ok) {
+                    console.log('Upload successful!');
+                    document.getElementById('uploadStatus').innerHTML = 'Upload successful!';
+                } else {
+                    throw new Error('Upload failed!');
+                }
+            })
+            .catch(function(error) {
+                console.error('Error:', error);
+                document.getElementById('uploadStatus').innerHTML = 'Error: ' + error.message;
+            });
+        });
+    </script>
+</body>
+</html>
