@@ -33,7 +33,7 @@
             }
 
             // request a pre-signed URL from backend, then handle the response and extract url
-            fetch('/generate-presigned-url?filename=' + encodeURIComponent(fileName), {
+            fetch('http://localhost:5000/generate-presigned-url?filename=' + encodeURIComponent(fileName), {
                 headers: {
                     'Authorization': token
                 }
