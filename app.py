@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import os
 from functools import wraps
 import boto3
-import logging
 from botocore.exceptions import NoCredentialsError, ClientError
+import logging
 import jwt
 import datetime
 import mysql.connector
@@ -74,8 +74,14 @@ def token_required(f):
         if not token:
             return jsonify({'message': 'Token is missing!'}), 403
         try:
+            token = token.split()[1]  # Split "Bearer <token>"
             jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-        except:
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token has expired!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Token is invalid!'}), 401
+        except Exception as e:
+            print(f"Unexpected error: {e}")
             return jsonify({'message': 'Token is invalid!'}), 401
         return f(*args, **kwargs)
     return decorated
@@ -83,6 +89,7 @@ def token_required(f):
 # define route for GET requests, initialize boto3 S3 client, 
 # retrieve filename from client-side JavaScript
 @app.route('/generate-presigned-url')
+@token_required
 def generate_presigned_url():
     s3_client = boto3.client('s3')
     file_name = request.args.get('filename')
@@ -90,6 +97,7 @@ def generate_presigned_url():
         return jsonify({'error': 'Filename parameter is missing'}), 400
     
 # generate pre-signed url for PUT operation to bucket, and error handling
+
     try:
         response = s3_client.generate_presigned_url('put_object',
                                                     Params={'Bucket': 'your-bucket-name',
@@ -104,7 +112,7 @@ def generate_presigned_url():
         return jsonify({'error': 'Failed to generate pre-signed URL'}), 500
     
 # return URL to client as json
-    return jsonify({'url': response})
+    return jsonify(response)
 
 # user login route to issue JWT
 @app.route('/login', methods=['POST'])
@@ -120,7 +128,7 @@ def login():
         token = jwt.encode({
             'sub': username,
             'iat': datetime.datetime.utcnow(),
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Token expires in 30 minutes
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=1)  # Token expires in 30 minutes
         }, app.config['SECRET_KEY'], algorithm='HS256')
 
         return jsonify({'token': token})

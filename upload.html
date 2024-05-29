@@ -35,16 +35,23 @@
             // request a pre-signed URL from backend, then handle the response and extract url
             fetch('http://localhost:5000/generate-presigned-url?filename=' + encodeURIComponent(fileName), {
                 headers: {
-                    'Authorization': token
+                    'Authorization': 'Bearer ' + token
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to get pre-signed URL');
+                }
+                return response.json();
+            })
             .then(function(data) {
                 var presignedUrl = data.url;
+                var uploadHeaders = data.headers || {};
 
                 // use the pre-signed URL to upload the file
                 return fetch(presignedUrl, {
                     method: 'PUT',
+                    headers: uploadHeaders,
                     body: file
                 });
             })
