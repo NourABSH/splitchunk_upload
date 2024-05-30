@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 import os
 from functools import wraps
 import boto3
@@ -51,11 +51,8 @@ def register():
         connection.commit()  # Commit the transaction to make sure data is saved in the database
         return jsonify({"message": "User registered successfully!"}), 201
     except mysql.connector.IntegrityError:
-        response = jsonify({"error": "This username is already taken"})
-        print("Response being sent:", response.get_data(as_text=True))  # Log to ensure the response structure
-        return response, 409
+        return jsonify({"error": "This username is already taken"}), 409
     except Error as e:
-        print("Database error:", e)
         return jsonify({"error": "Failed to register user due to database error"}), 500
     except Exception as e:
         print("General error:", e)
@@ -91,28 +88,25 @@ def token_required(f):
 @app.route('/generate-presigned-url')
 @token_required
 def generate_presigned_url():
-    s3_client = boto3.client('s3')
     file_name = request.args.get('filename')
     if not file_name:
         return jsonify({'error': 'Filename parameter is missing'}), 400
-    
-# generate pre-signed url for PUT operation to bucket, and error handling
+    s3_client = boto3.client('s3')
 
+# generate pre-signed url for PUT operation to bucket, and error handling
     try:
-        response = s3_client.generate_presigned_url('put_object',
-                                                    Params={'Bucket': 'your-bucket-name',
+        presigned_url = s3_client.generate_presigned_url('put_object',
+                                                    Params={'Bucket': 'splitchunk-upload',
                                                             'Key': file_name,
                                                             'ContentType': 'application/octet-stream'},
                                                     ExpiresIn=3600)
+        # return URL to client as json
+        return jsonify({'url': presigned_url})
     except NoCredentialsError:
-        logging.error("No AWS credentials available")
         return jsonify({'error': 'Credentials not available'}), 403
     except ClientError as e:
-        logging.error(f"Client error in generating pre-signed URL: {e}")
         return jsonify({'error': 'Failed to generate pre-signed URL'}), 500
     
-# return URL to client as json
-    return jsonify(response)
 
 # user login route to issue JWT
 @app.route('/login', methods=['POST'])
@@ -128,14 +122,13 @@ def login():
         token = jwt.encode({
             'sub': username,
             'iat': datetime.datetime.utcnow(),
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=1)  # Token expires in 30 minutes
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Token expires in 30 minutes
         }, app.config['SECRET_KEY'], algorithm='HS256')
 
         return jsonify({'token': token})
     else:
-        response = jsonify({'message': 'Invalid credentials'})
         print("Login failed for user:", username)  # Log for debugging
-        return response, 401
+        return jsonify({'message': 'Invalid credentials'}), 401
 
 # server start
 if __name__ == '__main__':
